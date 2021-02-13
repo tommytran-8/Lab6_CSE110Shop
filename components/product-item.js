@@ -1,52 +1,54 @@
 // product-item.js
-const sample = document.getElementsByClassName('product')[0];
 const cart = document.getElementById('cart-count');
 const localStorage = window.localStorage;
 if (!localStorage.getItem('data-*')){
-  localStorage.setItem('data-*', "");
+  localStorage.setItem('data-*', JSON.stringify({}));
 }
 class ProductItem extends HTMLElement {
   // TODO
   constructor(){
     super();
 
-
     this.attachShadow({mode: 'open'});
     const wrapper = document.createElement('li');
     wrapper.setAttribute('class','product');
     
     const img = wrapper.appendChild(document.createElement('img'));
-    img.src = sample.children[0].src;
+    img.src = this.hasAttribute('img') ? this.getAttribute('img') : 'default.png';
+    img.alt = this.hasAttribute('itemname') ? this.getAttribute('itemname') : "no image";
     
     const title = wrapper.appendChild(document.createElement('p'));
     title.setAttribute('class', 'title');
-    title.textContent = sample.children[1].textContent;
+    title.textContent = this.hasAttribute('itemname') ? this.getAttribute('itemname') : "no title";
 
     const price = wrapper.appendChild(document.createElement('p'));
     price.setAttribute('class', 'price');
-    price.textContent = sample.children[2].textContent;
+    price.textContent = this.hasAttribute('price') ? this.getAttribute('price') : "no price";
 
     const button = wrapper.appendChild(document.createElement('button'));
-    button.textContent = sample.children[3].textContent;
+    button.textContent = "Add to Cart";
+
+
+    this.img = img;
+    this.itemname = title;
+    this.price = price;
+    this.button = button;
+
+
     button.onclick = ()=>{
       if (button.textContent == "Add to Cart"){
         button.textContent = "Remove from Cart";
         cart.textContent = parseInt(cart.textContent) + 1;
-        localStorage.setItem('data-*', 
-          localStorage.getItem('data-*') + "~~~" + this.getTitle()
-        );
+        let itemlist  = JSON.parse(localStorage.getItem('data-*'));
+        itemlist[this.itemname.textContent] = 1;
+        localStorage.setItem('data-*', JSON.stringify(itemlist));
       }
       else{
         button.textContent = "Add to Cart";
         cart.textContent = parseInt(cart.textContent) - 1;
-        const itemlist = localStorage.getItem('data-*').split("~~~");
-        for (let i = 0; i < itemlist.length; i++){
-          if (itemlist[i] == this.getTitle()){
-            itemlist.splice(i, 1);
-            break;
-          }
-        }
-        localStorage.setItem('data-*', itemlist.join("~~~"));
+        let itemlist = JSON.parse(localStorage.getItem('data-*'));
+        delete itemlist[this.itemname.textContent];
+        localStorage.setItem('data-*', JSON.stringify(itemlist));
       }
     }
 
@@ -119,25 +121,25 @@ class ProductItem extends HTMLElement {
     this.shadowRoot.append(style, wrapper);
   
   }
-  setImage(src){
-    this.shadowRoot.children[1].children[0].src = src;
-  }
-  
-  setTitle(title){
-    this.shadowRoot.children[1].children[1].textContent = title;
-  }
-  setPrice(price){
-    this.shadowRoot.children[1].children[2].textContent = '$' + price;
-  }
-  
 
 
-  getTitle(){
-    return this.shadowRoot.children[1].children[1].textContent;
+  static get observedAttributes() {
+    return [`img`, `title`, `price`, `button`];
   }
-  getButton(){
-    return this.shadowRoot.children[1].children[3];
+  
+  attributeChangedCallback(name, oldValue, newValue){
+    if (name == "img"){
+      this.img.src = newValue;
+    }
+    else if (name == "title"){
+      this.img.alt = newValue;
+      this.itemname.textContent = newValue;
+    }
+    else if (name == "price"){
+      this.price.textContent = newValue;
+    }
   }
 }
 
 customElements.define('product-item', ProductItem);
+
